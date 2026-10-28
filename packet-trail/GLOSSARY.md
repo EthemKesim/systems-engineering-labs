@@ -126,3 +126,28 @@ A practical reference for Linux networking, Cloud Engineering, DevOps, and Kuber
 ---
 
 **Update rule:** After each PacketTrail lab, add only terms used or meaningfully introduced, with a short definition, a command or concrete example, and a link to the relevant lab or incident.
+
+## Lab 06 Addendum — NAT, Packet Filtering & Repeatability
+
+| Term | Definition | PacketTrail evidence / command |
+|---|---|---|
+| **Source NAT (SNAT)** | Translation of a packet's source IP, often during postrouting. | `snat to 10.50.2.1`; rt-b saw 10.50.2.1 instead of 10.50.1.10. |
+| **Destination NAT (DNAT)** | Translation of a packet's destination address, usually before routing. | Relevant to port forwarding; not yet tested in this lab. |
+| **MASQUERADE** | Dynamic form of SNAT that uses an appropriate outgoing interface address. | `oifname "rr1" masquerade`; three translated ICMP requests captured. |
+| **Netfilter** | Linux kernel framework for packet processing, filtering, NAT and conntrack integration. | nftables hooks and chains in rt-router. |
+| **nftables** | Linux firewall/NAT rule framework managed by `nft`. | `nft list ruleset`, `nft add rule`, `nft delete table`. |
+| **Table** | Container for nftables chains within a protocol family. | `inet packettrail`, `ip packettrail_nat`. |
+| **Chain** | Ordered set of packet processing rules, optionally attached to a hook. | `forward`, `postrouting`. |
+| **Hook** | Kernel packet-processing stage where a base chain executes. | `hook forward`, `hook postrouting`. |
+| **FORWARD** | Path for packets being routed through, rather than addressed to, the current namespace. | `rt-a -> rt-b` ICMP filtered by router. |
+| **POSTROUTING** | Hook after a routing decision, before a packet leaves. | Source translation in `postrouting`. |
+| **PREROUTING** | Hook before the routing decision on incoming traffic. | Often used for DNAT; not tested yet. |
+| **Drop rule** | Discards matching packets without sending them forward. | `counter drop`; 3 packets / 252 bytes. |
+| **Rule counter** | Packet and byte totals for traffic matching a rule. | `nft list table inet packettrail`. |
+| **Connection tracking (conntrack)** | Tracks flow state and NAT mappings so replies can be translated consistently. | Explains return traffic in the SNAT/MASQUERADE experiments. |
+| **Packet capture** | Observation of network packets on an interface. | `tcpdump -ni rb0 -c 3 'icmp...'`. |
+| **Baseline** | Known-good behavior recorded before changing the system. | Initial 3/3 pings before firewall testing. |
+| **Failure injection** | Controlled introduction of a fault to study behavior and recovery. | Targeted ICMP `drop` rule. |
+| **Recovery verification** | Re-running the original failing test after a fix. | Ping succeeded 3/3 after rule removal. |
+| **Repeatable automation** | Scripted, consistent reconstruction of a working environment. | `sudo bash setup.sh` recreated the three namespaces. |
+| **Idempotence** | Repeating an operation produces the same intended end state without unintended additional changes. | Current script refuses to overwrite an existing topology; it is deliberately not fully idempotent. |
